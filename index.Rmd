@@ -68,7 +68,7 @@ plotly_line_plot <- function(
   p %>% layout(
     title = list(
       text = title,
-      x = 0.1,               # Position at left
+      x = 0,               # Position at left
       xanchor = "left",      # Left-align the title
       y = 0.98,             # Adjust vertical position
       yanchor = "top",       # Anchor at top
@@ -140,10 +140,6 @@ plotly_line_plot(
 ```
 
 
-
-Row
------------------------------------------------------------------------
-
 ### Atvinnuleysi
 
 ```{r}
@@ -159,14 +155,19 @@ plotly_line_plot(
 ```
 
 
+
+Row
+-----------------------------------------------------------------------
+
+
 ### Vinnustundir
 
 ```{r}
 plotly_line_plot(
   data = data_ls$vinnustundir,
   x = date,
-  y = vinnustundir,
-  color = kyn
+  y = vinnustundir
+  #color = kyn
 )
 
 ```
@@ -182,6 +183,21 @@ plotly_line_plot(
 )
 ```
 
+### Stýrivextir
+
+```{r}
+plotly_line_plot(
+  data = data_ls$styrivextir,
+  x = date,
+  y = policy_rate,
+  color = land,
+  text = ~ paste(land, percent(policy_rate, accuracy = 0.1)),
+  y_tickformat = ".1%"
+)
+```
+
+
+###
 
 
 VR
@@ -224,6 +240,42 @@ plotly_line_plot(
   x = date,
   y = fjoldi,
   color = aldurshopur
+  )
+
+```
+
+
+Row
+-----------------------------------------------------------------------
+
+
+
+Ferðaþjónustan
+=======================================================================
+
+
+Row
+-----------------------------------------------------------------------
+
+
+### Fjöldi ferðamanna
+```{r}
+plotly_line_plot(
+  data = data_ls$fjoldi_ferdamanna,
+  x = date,
+  y = value,
+  color = name
+  )
+
+```
+
+
+### Fjöldi gistinátta
+```{r}
+plotly_line_plot(
+  data = data_ls$fjodi_gistinatta,
+  x = date,
+  y = value
   )
 
 ```

@@ -148,7 +148,8 @@ vinnustundir_tbl <- vinnustundir_tbl %>%
     vinnustundir = Vinnustundir / 10
     ) %>% 
   select(date, vinnustundir, kyn) %>% 
-  filter(date >= date_back)
+  filter(date >= date_back, kyn == "Alls") %>% 
+  select(-Kyn)
 
 
 # 2.7.0 Hlutafll af vinnumarkaði ------------------------------------------
@@ -259,16 +260,18 @@ fjoldi_ferdamanna_tbl <- read_csv2("https://px.hagstofa.is:443/pxis/sq/567d0d46-
   mutate(date = fix_date(date)) %>% 
   filter(date >= date_back)
 
-gistinaetur_tbl <- read_csv2("https://px.hagstofa.is:443/pxis/sq/2ecaa9c6-5894-49cc-b06a-119fff94c525") %>% 
+gistinaetur_tbl <- read_csv2("https://px.hagstofa.is:443/pxis/sq/09599522-b580-439e-8ad9-2e8c6ecf3388") %>% 
   janitor::clean_names() %>% 
   left_join(months_tbl) %>% 
   mutate(date = make_date(ar, man_no))
   
 gistinaetur_tbl <- gistinaetur_tbl %>% 
   select(-c(ar, manudur, man_no)) %>% 
-  set_names("Íslendingar", "Útlendingar", "date") %>% 
+  set_names("Gistinætur", "date") %>% 
   pivot_longer(cols = -date) %>% 
-  filter(date >= date_back)
+  filter(date >= date_back) %>% 
+  mutate(value = as.numeric(value)) %>% 
+  drop_na()
 
 
 # 2.11.0 Atvinnulausir ----------------------------------------------------
@@ -362,6 +365,9 @@ styrivextir_tbl <- policy_raw %>%
   left_join(lond_tbl) %>% 
   drop_na()
 
+
+styrivextir_tbl <- styrivextir_tbl %>% 
+  filter(land %in% c("Ísland", "Noregur", "Danmörk", "Svíþjóð", "Finnland", "Bandaríkin"))
 
 
 # 3.0.0 Save data ---------------------------------------------------------
