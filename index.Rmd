@@ -85,7 +85,7 @@ plotly_line_plot <- function(
     yaxis = list(
       tickformat = y_tickformat
     ),
-    margin = list(l = 100, t = 40)  # Left/top margins
+    margin = list(l = 20, t = 20)  # Left/top margins
   )
 }
 ```
