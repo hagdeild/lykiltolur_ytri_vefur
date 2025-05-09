@@ -10,10 +10,13 @@ library(rvest)
 library(httr)
 library(readxl)
 library(BIS)
+library(janitor)
+library(withr)
 
 con <- vr_gagnagrunnur()
 
 lond_tbl <- vr::heiti_landa %>% select(country, land)
+
 
 # 2.0.0 - DATA - ----------------------------------------------------------
 
@@ -103,6 +106,7 @@ kaupmattur_vr_tbl <- tbl(con, "kaupmattarvisitala") %>%
   janitor::clean_names() %>% 
   select(date, leitni) %>% 
   filter(date >= date_back) %>% 
+  arrange(date) %>% 
   mutate(
     date = date(date),
     leitni = leitni / leitni[1] * 100
@@ -128,8 +132,8 @@ kaupmattur_vr_tbl <- tbl(con, "kaupmattarvisitala") %>%
 slaki_tbl <- read_csv2("https://px.hagstofa.is:443/pxis/sq/55b928be-b958-4963-bb76-0cb8624eb7d6") %>% 
   set_names("date", "Slaki á vinnumarkaði") %>% 
   mutate(date = fix_date(date)) %>% 
-  pivot_longer(cols = -date)
-
+  pivot_longer(cols = -date) %>% 
+  filter(date >= date_back)
 
 
 # 2.6.0 Vinnustundir ------------------------------------------------------
@@ -141,9 +145,10 @@ vinnustundir_tbl <- read_csv2("https://px.hagstofa.is:443/pxis/sq/bbbb2a35-e815-
 vinnustundir_tbl <- vinnustundir_tbl %>% 
   mutate(
     date = fix_date(date),
-    Vinnustundir = Vinnustundir / 10
-    )
-
+    vinnustundir = Vinnustundir / 10
+    ) %>% 
+  select(date, vinnustundir, kyn) %>% 
+  filter(date >= date_back)
 
 
 # 2.7.0 Hlutafll af vinnumarkaði ------------------------------------------
@@ -201,25 +206,22 @@ hlutfall_tbl <- vr_starfandi_tbl %>%
 
 # 2.8.0 Erlent ríkisfang --------------------------------------------------
 
-erlent_rikisfang_tbl <- tbl(con, "FG_V") %>% 
+erlent_rikisfang_tbl <- tbl(con, "FG_V") %>%
   filter(INNH %in% c("A", ".")) %>%
   select(ID, ARMA) %>%
   left_join(tbl(con, "FE_V") %>% select(ID, HEITI)) %>%
-  mutate(rikisfang = if_else(HEITI == "Ísland", "Íslenskt", "Erlent")) %>% 
+  mutate(rikisfang = if_else(HEITI == "Ísland", "islenskt", "erlent")) %>% 
   group_by(ARMA, rikisfang) %>%
-  summarise(fjoldi = n_distinct(ID)) %>% 
+  summarise(fjoldi = n_distinct(ID), .groups = "drop") %>%
   as_tibble() %>% 
   janitor::clean_names() %>%
-  mutate(date = make_date(str_sub(arma, 1, 4), str_sub(arma, 5, 6)))
-  
-erlent_rikisfang_tbl <- erlent_rikisfang_tbl %>% 
-  select(-arma) %>% 
+  mutate(date = make_date(str_sub(arma, 1, 4), str_sub(arma, 5, 6))) %>%
   drop_na() %>% 
-  pivot_wider(names_from = rikisfang, values_from = fjoldi) %>% 
-  mutate(hlutfall = Erlent / (Erlent + Íslenskt)) %>% 
+  pivot_wider(names_from = rikisfang, values_from = fjoldi) %>%
+  mutate(hlutfall = erlent / (erlent + islenskt)) %>%
   filter(date >= date_back, date <= max_date) %>% 
   arrange(date)
-
+  
 
 
 # 2.9.0 Aldurssamsetning --------------------------------------------------
@@ -239,12 +241,15 @@ aldursskipting_og_kyn_tbl <- tbl(con, "FG_V") %>%
         TRUE ~ "55 ára og eldri"
         )
     ) %>% 
-  group_by(arma, kyn, aldurshopur) %>% 
+  group_by(arma, aldurshopur) %>% 
   summarise(fjoldi = n_distinct(id)) %>% 
-  as_tibble()
+  as_tibble() %>% 
+  mutate(date = make_date(str_sub(arma, 1, 4), str_sub(arma, 5, 6))) %>% 
+  select(-arma)
 
-
-
+aldursskipting_og_kyn_tbl <- aldursskipting_og_kyn_tbl %>% 
+  filter(date >= date_back, date <= max_date) %>% 
+  arrange(date)
 
 # 2.10.0 Ferðaþjónustan ---------------------------------------------------
 
@@ -361,4 +366,22 @@ styrivextir_tbl <- policy_raw %>%
 
 # 3.0.0 Save data ---------------------------------------------------------
 
+data_ls <- list(
+  "verdbolga" = vnv_tbl,
+  "laun" = laun_tbl,
+  "kaupmattur" = kaupmattur_vr_tbl,
+  "slaki_vinnum" = slaki_tbl,
+  "vinnustundir" = vinnustundir_tbl,
+  "vr_hlutfall" = hlutfall_tbl,
+  "erlent_rikisfang" = erlent_rikisfang_tbl,
+  "aldursskipting_vr" = aldursskipting_og_kyn_tbl,
+  "fjoldi_ferdamanna" = fjoldi_ferdamanna_tbl,
+  "fjodi_gistinatta" = gistinaetur_tbl,
+  "atvinnuleysi" = unemp_tbl,
+  "styrivextir" = styrivextir_tbl
+)
+
+
+data_ls %>% 
+  write_rds("01_clean-data/data.rds")
 
