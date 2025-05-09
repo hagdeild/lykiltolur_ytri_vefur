@@ -1,12 +1,14 @@
 ---
-title: " "
+title: "&nbsp;"
 output: 
   flexdashboard::flex_dashboard:
+    self_contained: true
     orientation: rows
     vertical_layout: fill
     css: styles.css
 encoding: UTF-8
 ---
+
 
 ```{r setup, include=FALSE}
 library(flexdashboard)

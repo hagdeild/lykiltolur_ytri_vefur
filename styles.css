@@ -1,5 +1,34 @@
-
 .chart-title {
   font-family: "Lato", sans-serif !important;
   font-size: 16px !important;
+}
+
+/* Set navbar background to white */
+.navbar {
+  min-height: 40px !important;
+  padding: 0 !important;
+  background-color: white !important;
+  border-bottom: 1px solid #e7e7e7 !important;
+}
+
+/* Target the active tab with the correct classes */
+.nav-item.active .nav-link {
+  background-color: #003768 !important;
+  color: white !important;
+  font-weight: bold !important;
+}
+
+/* Style non-active tabs */
+.nav-item .nav-link {
+  color: #555 !important;
+}
+
+/* Optional hover effect for non-active tabs */
+.nav-item:not(.active) .nav-link:hover {
+  background-color: #f0f0f0 !important;
+}
+
+/* Make navbar less prominent */
+.nav-link {
+  padding: 10px 15px !important;
 }
