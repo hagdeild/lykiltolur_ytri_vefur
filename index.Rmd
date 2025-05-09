@@ -1,0 +1,233 @@
+---
+title: "&nbsp;"
+output: 
+  flexdashboard::flex_dashboard:
+    self_contained: true
+    orientation: rows
+    vertical_layout: fill
+    css: styles.css
+encoding: UTF-8
+---
+
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(tidyverse)
+library(plotly)
+library(rlang)
+library(scales)
+
+data_ls <- read_rds(here::here("01_clean-data/data.rds"))
+
+```
+
+```{r function}
+plotly_line_plot <- function(
+  data,
+  x,
+  y,
+  color = NULL,
+  text = NULL,
+  hoverinfo = NULL,
+  y_tickformat = NULL,
+  title = NULL,
+  ...
+) {
+  # 1) Capture the bare names as strings
+  x_str <- as_name(enquo(x))
+  y_str <- as_name(enquo(y))
+  color_quo <- enquo(color)
+  color_str <- if (!quo_is_null(color_quo)) as_name(color_quo) else NULL
+
+  # 2) Pull out the vectors
+  x_vec <- data[[x_str]]
+  y_vec <- data[[y_str]]
+  color_vec <- if (!is.null(color_str) && color_str %in% names(data)) data[[color_str]] else NULL
+
+  # 3) Eval any formula‐style text inside the data
+  if (!is.null(text) && inherits(text, "formula")) {
+    text_vec <- eval(text[[2]], data, parent.frame())
+  } else {
+    text_vec <- text
+  }
+
+  # 4) Build the plot_ly args
+  args <- list(
+    x    = x_vec,
+    y    = y_vec,
+    type = "scatter",
+    mode = "lines"
+  )
+  if (!is.null(color_vec))   args$color     <- color_vec
+  if (!is.null(text_vec))    args$text      <- text_vec
+  if (!is.null(hoverinfo))   args$hoverinfo <- hoverinfo
+  args <- c(args, list(...))
+  
+  # 5) Call plot_ly and apply the layout tweaks
+  p <- do.call(plot_ly, args)
+  p %>% layout(
+    title = list(
+      text = title,
+      x = 0.1,               # Position at left
+      xanchor = "left",      # Left-align the title
+      y = 0.98,             # Adjust vertical position
+      yanchor = "top",       # Anchor at top
+      font = list(size = 12) # Smaller font size
+    ),
+    legend = list(          # Uncommented and corrected
+      orientation = "h",    # Horizontal legend
+      x = 0.5,              # Center horizontally
+      xanchor = "center",   
+      y = -0.2,             # Position below plot
+      yanchor = "top"       
+    ),
+    xaxis = list(title = ""),
+    yaxis = list(
+      tickformat = y_tickformat
+    ),
+    margin = list(l = 100, t = 40)  # Left/top margins
+  )
+}
+```
+
+Hagtölur
+=======================================================================
+
+Row
+-----------------------------------------------------------------------
+
+### Verðbólga með og án húsnæðis
+
+```{r}
+
+plotly_line_plot(
+  data = data_ls$verdbolga,
+  x = date,
+  y = value,
+  color = name,
+  hoverinfo = "text",
+  text = ~paste(name, percent(value, accuracy = 0.1)),
+  y_tickformat  = ".1%"
+)
+
+```
+
+
+
+### Launaþróun
+
+```{r}
+plotly_line_plot(
+  data = data_ls$laun,
+  x = date,
+  y = value,
+  color = name,
+  hoverinfo = "text",
+  text = ~ name
+  )
+```
+
+
+
+### Kaupmáttarvísitala VR
+
+```{r}
+plotly_line_plot(
+  data = data_ls$kaupmattur,
+  x = date,
+  y = value
+  )
+```
+
+
+
+Row
+-----------------------------------------------------------------------
+
+### Atvinnuleysi
+
+```{r}
+plotly_line_plot(
+  data = data_ls$atvinnuleysi,
+  x = date,
+  y = value,
+  color = name,
+  hoverinfo = "text",
+  text = ~ paste(name, percent(value, accuracy = 0.1)),
+  y_tickformat = ".1%"
+)
+```
+
+
+### Vinnustundir
+
+```{r}
+plotly_line_plot(
+  data = data_ls$vinnustundir,
+  x = date,
+  y = vinnustundir,
+  color = kyn
+)
+
+```
+
+
+### Slaki á vinnumarkaði
+```{r}
+plotly_line_plot(
+  data = data_ls$slaki_vinnum,
+  x = date,
+  y = value,
+  title = "Því hærra sem gildið er því meiri slaki"
+)
+```
+
+
+
+VR
+=======================================================================
+
+Row
+-----------------------------------------------------------------------
+
+### Hlutfall VR af vinnumarkaði skipt eftir kynjum
+```{r}
+plotly_line_plot(
+  data = data_ls$vr_hlutfall,
+  x = date,
+  y = hlutfall,
+  color = kyn,
+  text = ~ paste(kyn, percent(hlutfall, accuracy = 0.1)),
+  y_tickformat = ".1%"
+)
+```
+
+
+
+### Erlent ríkisfang
+```{r}
+plotly_line_plot(
+  data = data_ls$erlent_rikisfang,
+  x = date,
+  y = hlutfall,
+  text = ~ percent(hlutfall, accuracy = 0.1),
+  y_tickformat = ".1%"
+)
+
+```
+
+
+### Aldursskipting innan VR
+```{r}
+plotly_line_plot(
+  data = data_ls$aldursskipting_vr,
+  x = date,
+  y = fjoldi,
+  color = aldurshopur
+  )
+
+```
+
+
+Row
+-----------------------------------------------------------------------
